@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenAPI 兼容性排练</title>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #182031; --panel2: #1f2a3f; --ink: #e7edf7;
+    --muted: #93a1b8; --line: #2a3752; --accent: #5ea8ff; --ok: #3ddc97;
+    --warn: #f6c453; --bad: #ff6b6b; --chip: #28354f;
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; font: 14px/1.55 -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    "PingFang SC", "Microsoft YaHei", sans-serif; background:var(--bg); color:var(--ink); }
+  header { padding:18px 24px; border-bottom:1px solid var(--line);
+    display:flex; align-items:baseline; gap:14px; flex-wrap:wrap; }
+  header h1 { font-size:18px; margin:0; }
+  header .sub { color:var(--muted); font-size:12px; }
+  main { padding:20px 24px 60px; max-width:1240px; margin:0 auto; }
+  .grid { display:grid; gap:16px; }
+  .cols-2 { grid-template-columns: 1fr 1fr; }
+  .cols-3 { grid-template-columns: repeat(3, 1fr); }
+  .panel { background:var(--panel); border:1px solid var(--line); border-radius:10px;
+    padding:16px 18px; }
+  .panel h2 { font-size:13px; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--muted); margin:0 0 12px; }
+  label { display:block; font-size:12px; color:var(--muted); margin:8px 0 3px; }
+  input, select, textarea, button { font:inherit; }
+  input, select, textarea { width:100%; background:var(--panel2); color:var(--ink);
+    border:1px solid var(--line); border-radius:7px; padding:8px 10px; }
+  textarea { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px;
+    min-height:150px; resize:vertical; }
+  button { background:var(--accent); color:#081220; border:0; border-radius:7px;
+    padding:8px 14px; font-weight:600; cursor:pointer; margin-top:10px; }
+  button.ghost { background:transparent; color:var(--ink); border:1px solid var(--line); }
+  button.small { padding:4px 10px; font-size:12px; margin:0; }
+  button:disabled { opacity:.45; cursor:not-allowed; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .muted { color:var(--muted); }
+  .mono { font-family:ui-monospace,Menlo,monospace; }
+  .kpi { display:flex; flex-direction:column; gap:2px; }
+  .kpi b { font-size:22px; }
+  .kpi span { color:var(--muted); font-size:12px; }
+  .chip { display:inline-block; padding:1px 8px; border-radius:99px; font-size:11px;
+    background:var(--chip); border:1px solid var(--line); color:var(--ink); }
+  .sev-BREAKING { background:rgba(255,107,107,.16); color:var(--bad);
+    border-color:rgba(255,107,107,.5); }
+  .sev-WARNING  { background:rgba(246,196,83,.14); color:var(--warn);
+    border-color:rgba(246,196,83,.45); }
+  .sev-COMPATIBLE { background:rgba(61,220,151,.12); color:var(--ok);
+    border-color:rgba(61,220,151,.4); }
+  .out-PASS .out-dot { color:var(--ok); }
+  .out-FAIL .out-dot { color:var(--bad); }
+  .out-EXCLUDED .out-dot { color:var(--muted); }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:7px 9px; border-bottom:1px solid var(--line);
+    vertical-align:top; }
+  th { color:var(--muted); font-weight:600; font-size:12px; }
+  tr.clickable { cursor:pointer; }
+  tr.clickable:hover { background:var(--panel2); }
+  .hash { font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--muted); }
+  .toast { position:fixed; right:18px; bottom:18px; background:var(--panel2);
+    border:1px solid var(--line); border-radius:8px; padding:10px 14px; max-width:420px;
+    box-shadow:0 8px 30px rgba(0,0,0,.4); display:none; white-space:pre-wrap; }
+  .toast.err { border-color:rgba(255,107,107,.6); }
+  dialog { background:var(--panel); color:var(--ink); border:1px solid var(--line);
+    border-radius:12px; width:min(960px, 92vw); max-height:88vh; padding:0; }
+  dialog::backdrop { background:rgba(5,8,15,.7); }
+  .dlg-head { padding:14px 18px; border-bottom:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center; }
+  .dlg-body { padding:16px 18px; overflow:auto; max-height:74vh; }
+  pre { background:#0b111c; border:1px solid var(--line); border-radius:8px;
+    padding:10px; overflow:auto; font-size:12px; margin:6px 0 0; }
+  .viol { border-left:3px solid var(--bad); padding:2px 0 2px 10px; margin:6px 0; }
+  .okbox { color:var(--ok); font-size:12px; }
+  .tabs { display:flex; gap:6px; margin-bottom:12px; }
+  .tabs button { margin:0; background:var(--panel2); color:var(--muted); }
+  .tabs button.active { background:var(--accent); color:#081220; }
+  details { margin:8px 0; }
+  summary { cursor:pointer; }
+  .hidden { display:none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>OpenAPI 兼容性排练</h1>
+  <span class="sub">结构差异 × 样本验证 × 版本化兼容策略 · 全部结论可由保存输入复算</span>
+</header>
+<main class="grid">
+<section class="grid cols-2">
+  <div class="panel">
+    <h2>1 · 导入规范</h2>
+    <div class="row">
+      <div style="flex:1">
+        <label>规范键（baseline / candidate / …）</label>
+        <input id="specKey" value="candidate">
+      </div>
+    </div>
+    <label>OpenAPI（JSON 或 YAML，原样字节决定指纹）</label>
+    <textarea id="specText" placeholder="openapi: 3.0.3 ..."></textarea>
+    <div class="row">
+      <button onclick="putSpec()">保存规范</button>
+      <button class="ghost" onclick="loadSpec()">读取已存</button>
+      <span id="specMeta" class="muted"></span>
+    </div>
+    <div id="specList"></div>
+  </div>
+
+  <div class="panel">
+    <h2>2 · 导入脱敏样本（JSON 数组，失败整批回滚）</h2>
+    <label>样本集合</label>
+    <input id="sampleSet" value="default">
+    <label>样本批次</label>
+    <textarea id="sampleText">[
+  {
+    "method": "GET", "path": "/pets", "statusCode": 200,
+    "responseMediaType": "application/json",
+    "responseBody": [ {"id":1,"name":"Rex","kind":"dog","status":"available"} ]
+  }
+]</textarea>
+    <div class="row">
+      <button onclick="postSamples()">导入批次</button>
+      <button class="ghost" onclick="loadSamples()">查看集合</button>
+      <button class="ghost" onclick="deleteSamples()">删除集合</button>
+      <span id="sampleMeta" class="muted"></span>
+    </div>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>3 · 创建排练（指纹 × 策略版本 × 样本快照）</h2>
+  <div class="row">
+    <div><label>基线</label><input id="baseKey" value="baseline" style="width:150px"></div>
+    <div><label>候选</label><input id="candKey" value="candidate" style="width:150px"></div>
+    <div><label>兼容策略</label>
+      <select id="policy" style="width:170px">
+        <option value="2025.1">2025.1 strict</option>
+        <option value="2024.09">2024.09 legacy</option>
+      </select></div>
+    <div><label>样本集合</label><input id="runSet" value="default" style="width:140px"></div>
+    <div style="align-self:flex-end"><button onclick="createRun()">创建 / 取缓存</button></div>
+  </div>
+  <div id="runList" class="row" style="margin-top:10px"></div>
+</section>
+
+<div id="reportArea" class="hidden">
+  <section class="panel">
+    <h2>汇总</h2>
+    <div id="summary" class="grid cols-3"></div>
+    <p class="muted" id="runFinger" style="margin-top:12px"></p>
+  </section>
+
+  <section class="panel">
+    <h2>独立证据（不计入通过率）</h2>
+    <div id="evidence"></div>
+  </section>
+
+  <section class="panel">
+    <h2>结构变化（可对精确变化申请有时限豁免）</h2>
+    <div id="changes"></div>
+  </section>
+
+  <section class="panel">
+    <h2>样本下钻（旧验证 / 新验证 / 消费方差异）</h2>
+    <div id="samples"></div>
+  </section>
+</div>
+
+<section class="grid cols-2">
+  <div class="panel">
+    <h2>豁免（定位失效自动待处理）</h2>
+    <div class="row" style="margin-bottom:8px">
+      <input id="exCand" placeholder="candidateKey" style="flex:1">
+      <button class="small" onclick="loadExemptions()">查询</button>
+    </div>
+    <div id="exemptions"></div>
+  </div>
+  <div class="panel">
+    <h2>人工决定事件（只追加，撤销产生新事件）</h2>
+    <button class="small" onclick="loadEvents()" style="margin-bottom:8px">刷新事件</button>
+    <div id="events"></div>
+  </div>
+</section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<dialog id="dlg">
+  <div class="dlg-head">
+    <strong id="dlgTitle"></strong>
+    <button class="small ghost" onclick="dlg.close()">关闭</button>
+  </div>
+  <div class="dlg-body" id="dlgBody"></div>
+</dialog>
+
+<script>
+const api = (p) => '/api' + p;
+const dlg = document.getElementById('dlg');
+let currentReport = null;
+let currentCand = null;
+
+function toast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isErr ? ' err' : '');
+  t.style.display = 'block';
+  clearTimeout(t._h);
+  t._h = setTimeout(() => (t.style.display = 'none'), 5000);
+}
+async function send(method, url, body, raw) {
+  const opts = { method, headers: {} };
+  if (body !== undefined) {
+    if (raw) { opts.headers['Content-Type'] = 'text/plain'; opts.body = body; }
+    else { opts.headers['Content-Type'] = 'application/json';
+           opts.body = JSON.stringify(body); }
+  }
+  const res = await fetch(url, opts);
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+  if (!res.ok) {
+    throw new Error((data && data.message) ? data.message : (method + ' ' + url + ' -> ' + res.status));
+  }
+  return data;
+}
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const sevChip = (s) => `<span class="chip sev-${s}">${s}</span>`;
+async function putSpec() {
+  try {
+    const r = await send('PUT', api('/specs/' + encodeURIComponent(
+      document.getElementById('specKey').value.trim())),
+      document.getElementById('specText').value, true);
+    document.getElementById('specMeta').textContent =
+      `${r.created ? '新建' : r.changed ? '变更 v' + r.versionSeq : '内容未变 v' + r.versionSeq} · ${r.contentHash.slice(0,12)}`;
+    toast('规范已保存（' + (r.created ? '新建' : r.changed ? 'v' + r.versionSeq : '幂等') + '）');
+    listSpecs();
+  } catch (e) { toast(e.message, true); }
+}
+async function loadSpec() {
+  try {
+    const key = document.getElementById('specKey').value.trim();
+    const r = await send('GET', api('/specs/' + encodeURIComponent(key)));
+    document.getElementById('specText').value = r.rawText;
+    document.getElementById('specMeta').textContent =
+      'v' + r.versionSeq + ' · ' + r.contentHash.slice(0, 12);
+  } catch (e) { toast(e.message, true); }
+}
+async function listSpecs() {
+  const rows = await send('GET', api('/specs'));
+  document.getElementById('specList').innerHTML =
+    '<table><tr><th>键</th><th>版本</th><th>指纹</th></tr>' +
+    rows.map(r => `<tr><td><a href="#" onclick="pickSpec('${esc(r.specKey)}');return false">${esc(r.specKey)}</a></td>
+      <td>v${r.versionSeq}</td><td class="hash">${esc(r.contentHash.slice(0,16))}…</td></tr>`).join('')
+    + '</table>';
+}
+function pickSpec(key) {
+  document.getElementById('specKey').value = key;
+  loadSpec();
+}
+
+async function postSamples() {
+  try {
+    let rows = JSON.parse(document.getElementById('sampleText').value);
+    if (!Array.isArray(rows)) throw new Error('样本必须是 JSON 数组');
+    const set = document.getElementById('sampleSet').value.trim() || 'default';
+    const r = await send('POST', api('/samples/' + encodeURIComponent(set)), rows);
+    document.getElementById('sampleMeta').textContent =
+      `收到 ${r.received} · 新增 ${r.inserted} · 跳过重复 ${r.skipped} · 拒绝 ${r.rejected}`;
+    toast(`批次完成：新增 ${r.inserted}，重复跳过 ${r.skipped}`);
+  } catch (e) {
+    toast('批次被整体拒绝（无部分结果）：' + e.message, true);
+  }
+}
+async function loadSamples() {
+  const set = document.getElementById('sampleSet').value.trim() || 'default';
+  const rows = await send('GET', api('/samples/' + encodeURIComponent(set)));
+  document.getElementById('sampleText').value = JSON.stringify(rows.map(r => ({
+    method: r.method, path: r.path,
+    requestMediaType: r.requestMediaType || undefined,
+    requestBody: r.requestBody ? safeJson(r.requestBody) : undefined,
+    statusCode: r.statusCode === '' ? undefined : r.statusCode,
+    responseMediaType: r.responseMediaType || undefined,
+    responseBody: r.responseBody ? safeJson(r.responseBody) : undefined
+  })), null, 2);
+  document.getElementById('sampleMeta').textContent = rows.length + ' 条（已去重）';
+}
+async function deleteSamples() {
+  const set = document.getElementById('sampleSet').value.trim() || 'default';
+  const r = await send('DELETE', api('/samples/' + encodeURIComponent(set)));
+  toast('已删除 ' + r.deleted + ' 条');
+}
+function safeJson(t) { try { return JSON.parse(t); } catch { return t; } }
+
+async function createRun() {
+  try {
+    const body = {
+      baselineKey: document.getElementById('baseKey').value.trim(),
+      candidateKey: document.getElementById('candKey').value.trim(),
+      policyVersion: document.getElementById('policy').value,
+      sampleSet: document.getElementById('runSet').value.trim() || 'default'
+    };
+    const r = await send('POST', api('/runs'), body);
+    currentReport = r.report;
+    currentCand = body.candidateKey;
+    renderReport();
+    toast('排练完成：' + r.runKey.slice(0, 12) + '（相同输入直接取缓存）');
+    listRuns();
+  } catch (e) { toast(e.message, true); }
+}
+async function listRuns() {
+  const rows = await send('GET', api('/runs'));
+  document.getElementById('runList').innerHTML = rows.map(r =>
+    `<button class="small ghost" onclick="openRun('${r.runKey}')">${esc(r.candidateKey)}
+      · ${esc(r.policyVersion)} · <span class="hash">${esc(r.runKey.slice(0,10))}…</span></button>`
+  ).join('') || '<span class="muted">暂无排练</span>';
+}
+async function openRun(runKey) {
+  const r = await send('GET', api('/runs/' + runKey));
+  currentReport = r.report;
+  currentCand = r.candidateKey;
+  renderReport();
+}
+function renderReport() {
+  document.getElementById('reportArea').classList.remove('hidden');
+  const rep = currentReport, s = rep.summary, inp = rep.inputs;
+  const kpis = [
+    ['评估样本', s.evaluated], ['排除（证据）', s.excluded],
+    ['通过', s.pass], ['通过率', (s.passRate == null ? '—' : (s.passRate * 100).toFixed(1) + '%')],
+    ['有效通过（豁免后）', s.passEffective ?? s.pass],
+    ['有效通过率', s.passRateEffective == null ? '—' : (s.passRateEffective * 100).toFixed(1) + '%'],
+    ['BREAKING', s.breaking], ['WARNING', s.warning],
+    ['COMPATIBLE', s.compatible], ['豁免覆盖', s.exempted],
+    ['样本总数', s.totalSamples]
+  ];
+  document.getElementById('summary').innerHTML = kpis.map(([k, v]) =>
+    `<div class="kpi"><b>${v}</b><span>${k}</span></div>`).join('');
+  document.getElementById('runFinger').innerHTML =
+    `runKey=<span class="hash">${esc(inp.runKey)}</span><br>` +
+    `baseline=<span class="hash">${esc(inp.baselineHash.slice(0,16))}…</span> ` +
+    `candidate(${esc(inp.candidateKey)})=<span class="hash">${esc(inp.candidateHash.slice(0,16))}…</span><br>` +
+    `policy=${esc(inp.policyVersion)} sampleSet=${esc(inp.sampleSet)} ` +
+    `snapshot=<span class="hash">${esc(inp.sampleSetHash.slice(0,16))}…</span>`;
+
+  const ev = rep.evidence || [];
+  document.getElementById('evidence').innerHTML = ev.length
+    ? '<table><tr><th>类别</th><th>来源</th><th>位置</th><th>样本</th><th>说明</th></tr>' +
+      ev.map(e => `<tr><td><span class="chip">${esc(e.kind)}</span></td><td>${esc(e.scope)}</td>
+        <td class="mono">${esc(e.pointer)}</td><td class="hash">${esc((e.sampleId||'').slice(0,12))}</td>
+        <td>${esc(e.detail)}</td></tr>`).join('') + '</table>'
+    : '<span class="okbox">无未解析引用 / 循环 / 不完整样本。</span>';
+
+  const ch = rep.changes || [];
+  document.getElementById('changes').innerHTML =
+    '<table><tr><th>操作</th><th>方向</th><th>变化</th><th>位置</th><th>严重度</th><th>说明</th><th></th></tr>' +
+    ch.map((c, i) => `<tr>
+      <td class="mono">${esc(c.method)} ${esc(c.path)}</td>
+      <td>${esc(c.direction)}</td>
+      <td>${esc(c.code)}</td>
+      <td class="mono">${esc(c.pointer)}</td>
+      <td>${sevChip(c.severity)}</td>
+      <td>${esc(c.detail)}</td>
+      <td>${c.exemptedBy ? '<span class="chip sev-COMPATIBLE">' + esc(c.exemptedBy.slice(0,14)) + '…</span>'
+        : '<button class="small" onclick="askExemption(' + i + ')">豁免</button>'}</td>
+    </tr>`).join('') + '</table>';
+
+  const sm = rep.samples || [];
+  document.getElementById('samples').innerHTML =
+    '<table><tr><th>结果</th><th>操作</th><th>状态码</th><th>排除原因</th>' +
+      '<th>旧→新（请求）</th><th>旧→新（响应）</th><th></th></tr>' +
+    sm.map((x, i) => `<tr class="clickable out-${x.outcome}" onclick="sampleDetail(${i})">
+      <td><span class="out-dot">●</span> ${x.outcome}${x.exempted ? ' 🏳' : ''}</td>
+      <td class="mono">${esc(x.method)} ${esc(x.path)}</td>
+      <td>${esc(x.statusCode)}</td>
+      <td>${esc(x.excludeReason || '')}</td>
+      <td>${x.requestValidation.base.length} → ${x.requestValidation.cand.length}</td>
+      <td>${x.responseValidation.base.length} → ${x.responseValidation.cand.length}</td>
+      <td>${(x.consumerVisibleDiff || []).length} 条消费方差异</td></tr>`).join('') + '</table>';
+}
+
+function violList(v) {
+  if (!v || !v.length) return '<div class="okbox">✓ 无违反</div>';
+  return v.map(x => `<div class="viol"><b>${esc(x.rule)}</b>
+    <span class="mono">${esc(x.pointer)}</span><div class="muted">${esc(x.detail)}</div></div>`).join('');
+}
+function sampleDetail(i) {
+  const x = currentReport.samples[i];
+  document.getElementById('dlgTitle').textContent =
+    `${x.method} ${x.path} · ${x.outcome}` + (x.outcomeEffective && x.outcomeEffective !== x.outcome ? ' → ' + x.outcomeEffective : '') + (x.exempted ? '（已豁免覆盖）' : '');
+  document.getElementById('dlgBody').innerHTML = `
+    <p><span class="chip">样本 ${esc((x.sampleId||'').slice(0,16))}…</span>
+       <span class="chip">状态码 ${esc(x.statusCode || '—')}</span>
+       ${x.included ? '' : '<span class="chip sev-WARNING">排除：' + esc(x.excludeReason) + '</span>'}</p>
+    <div class="grid cols-2">
+      <div><h3 class="muted">旧规范 · 请求验证</h3>${violList(x.requestValidation.base)}</div>
+      <div><h3 class="muted">新规范 · 请求验证</h3>${violList(x.requestValidation.cand)}</div>
+      <div><h3 class="muted">旧规范 · 响应验证</h3>${violList(x.responseValidation.base)}</div>
+      <div><h3 class="muted">新规范 · 响应验证</h3>${violList(x.responseValidation.cand)}</div>
+    </div>
+    <h3 class="muted">响应消费方可能看到的差别</h3>
+    ${(x.consumerVisibleDiff || []).length
+      ? '<pre>' + esc(x.consumerVisibleDiff.join('\n')) + '</pre>'
+      : '<div class="okbox">无消费方可见差异</div>'}`;
+  dlg.showModal();
+}
+
+function askExemption(i) {
+  const c = currentReport.changes[i];
+  document.getElementById('dlgTitle').textContent = '申请有时限豁免';
+  document.getElementById('dlgBody').innerHTML = `
+    <p>${sevChip(c.severity)} <b>${esc(c.code)}</b>
+      <span class="mono">${esc(c.method)} ${esc(c.path)}</span>
+      <span class="mono">${esc(c.pointer)}</span></p>
+    <p class="muted">豁免绑定精确路径/方法/变化/位置与当前候选内容哈希；
+      规范继续变化导致定位失效时自动变为 PENDING，不做模糊匹配。</p>
+    <label>操作者</label><input id="exOp" value="alice">
+    <label>理由</label><input id="exReason" value="已知影响，迁移窗口内豁免">
+    <label>有效天数</label><input id="exDays" type="number" value="30">
+    <button onclick="grantExemption()">授予豁免</button>`;
+  dlg._change = c;
+  dlg.showModal();
+}
+async function grantExemption() {
+  const c = dlg._change;
+  try {
+    await send('POST', api('/exemptions'), {
+      candidateKey: currentCand, method: c.method, path: c.path,
+      changeCode: c.code, pointer: c.pointer,
+      reason: document.getElementById('exReason').value,
+      operator: document.getElementById('exOp').value,
+      validDays: Number(document.getElementById('exDays').value)
+    });
+    dlg.close();
+    toast('豁免已授予并记录事件');
+    loadExemptions(currentCand);
+  } catch (e) { toast(e.message, true); }
+}
+async function loadExemptions(presetKey) {
+  const key = (presetKey !== undefined ? presetKey
+    : document.getElementById('exCand').value.trim()) || currentCand || '';
+  document.getElementById('exCand').value = key;
+  const url = '/api/exemptions' + (key ? '?candidateKey=' + encodeURIComponent(key) : '');
+  const rows = await send('GET', url);
+  const cls = { ACTIVE: 'COMPATIBLE', PENDING: 'WARNING',
+    EXPIRED: 'WARNING', REVOKED: 'BREAKING' };
+  document.getElementById('exemptions').innerHTML = rows.length
+    ? '<table><tr><th>状态</th><th>定位</th><th>操作者</th><th>有效期至</th><th>理由</th><th></th></tr>' +
+      rows.map((e, i) => `<tr>
+        <td><span class="chip sev-${cls[e.effectiveStatus] || 'WARNING'}">${esc(e.effectiveStatus)}</span></td>
+        <td class="mono">${esc(e.method)} ${esc(e.path)}<br>${esc(e.changeCode)} ${esc(e.pointer)}</td>
+        <td>${esc(e.operator)}</td>
+        <td class="hash">${esc(e.validUntil)}</td>
+        <td>${esc(e.reason)}</td>
+        <td>${e.effectiveStatus === 'ACTIVE'
+          ? '<button class="small" onclick="revoke(\'' + esc(e.exemptionKey) + '\')">撤销</button>'
+          : ''}</td></tr>`).join('') + '</table>'
+    : '<span class="muted">暂无豁免</span>';
+}
+async function revoke(key) {
+  const operator = prompt('撤销操作者', 'bob');
+  if (!operator) return;
+  const reason = prompt('撤销理由（将追加新事件，不删除历史）', '重新评估后撤销');
+  if (!reason) return;
+  try {
+    await send('POST', api('/exemptions/' + encodeURIComponent(key) + '/revoke'),
+      { operator, reason });
+    toast('已追加撤销事件');
+    loadExemptions();
+    loadEvents();
+  } catch (e) { toast(e.message, true); }
+}
+async function loadEvents() {
+  const rows = await send('GET', api('/events'));
+  document.getElementById('events').innerHTML = rows.length
+    ? '<table><tr><th>时间</th><th>类型</th><th>操作者</th><th>理由</th><th>版本</th></tr>' +
+      rows.map(e => `<tr>
+        <td class="hash">${esc(e.createdAt)}</td>
+        <td><span class="chip">${esc(e.type)}</span></td>
+        <td>${esc(e.operator)}</td>
+        <td>${esc(e.reason)}</td>
+        <td class="hash">${esc((e.fromVersion || '').slice(0,10))} →
+            ${esc((e.toVersion || '').slice(0,10))}</td></tr>`).join('') + '</table>'
+    : '<span class="muted">暂无事件</span>';
+}
+
+listSpecs();
+listRuns();
+loadExemptions('');
+loadEvents();
+</script>
+</body>
+</html>

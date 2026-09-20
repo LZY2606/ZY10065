@@ -1,0 +1,129 @@
+openapi: 3.0.3
+info:
+  title: Pets API
+  version: "1.1"
+paths:
+  /pets:
+    get:
+      operationId: listPets
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Pet"
+    post:
+      operationId: createPet
+      parameters:
+        - $ref: "#/components/parameters/TraceId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewPet"
+      responses:
+        "201":
+          description: created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+        "4XX":
+          description: client error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "default":
+          description: other error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /pets/{petId}:
+    get:
+      operationId: getPet
+      parameters:
+        - name: petId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pet"
+components:
+  parameters:
+    TraceId:
+      name: X-Trace-Id
+      in: header
+      required: true
+      schema:
+        type: string
+  schemas:
+    Pet:
+      type: object
+      required: [id, name, kind, status, createdAt]
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        kind:
+          type: string
+          enum: [dog, cat]
+        status:
+          type: string
+          enum: [available, pending, sold]
+        createdAt:
+          type: string
+          format: date-time
+        tag:
+          type: string
+        rating:
+          type: number
+          minimum: 0
+          maximum: 5
+    NewPet:
+      type: object
+      required: [name, kind, status]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        kind:
+          type: string
+          enum: [dog, cat]
+        status:
+          type: string
+          enum: [available, pending, sold]
+        tag:
+          type: string
+          nullable: true
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: integer
+        message:
+          type: string

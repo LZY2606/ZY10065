@@ -34,3 +34,8 @@ coverage/
 .vite/
 .turbo/
 *.tsbuildinfo
+
+# Local H2 database files (runtime state, not part of the deliverable)
+data/
+*.mv.db
+*.trace.db

@@ -1,0 +1,113 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "orders", "version": "1.1.0" },
+  "paths": {
+    "/orders": {
+      "parameters": [
+        { "name": "X-Tenant", "in": "header", "required": true,
+          "schema": { "type": "string" } }
+      ],
+      "get": {
+        "operationId": "listOrders",
+        "parameters": [
+          { "name": "limit", "in": "query", "required": false,
+            "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 25 } },
+          { "name": "state", "in": "query", "required": false,
+            "schema": { "type": "string", "enum": ["new", "paid", "shipped"] } },
+          { "name": "trace", "in": "query", "required": true,
+            "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": {
+                "schema": { "$ref": "#/components/schemas/OrderList" }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createOrder",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": { "schema": { "$ref": "#/components/schemas/OrderCreate" } }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "created",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Order" } }
+            }
+          }
+        }
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "operationId": "getOrder",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true,
+            "schema": { "type": "string", "maxLength": 32 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/Order" } }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "health",
+        "responses": { "200": { "description": "ok" } }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "OrderList": {
+        "type": "array",
+        "items": { "$ref": "#/components/schemas/Order" },
+        "maxItems": 500
+      },
+      "Order": {
+        "type": "object",
+        "required": ["id", "state", "amount", "customer", "region"],
+        "properties": {
+          "id": { "type": "string", "maxLength": 32 },
+          "state": { "type": "string", "enum": ["new", "paid", "shipped"] },
+          "amount": { "type": "integer", "minimum": 0, "maximum": 900000 },
+          "customer": { "$ref": "#/components/schemas/Customer" },
+          "region": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
+        }
+      },
+      "Customer": {
+        "type": "object",
+        "required": ["email", "vip"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "tier": { "type": "string", "enum": ["free", "pro", "enterprise"] },
+          "vip": { "type": "boolean" }
+        }
+      },
+      "OrderCreate": {
+        "type": "object",
+        "required": ["amount", "customer"],
+        "properties": {
+          "amount": { "type": "number", "minimum": 1, "maximum": 900000 },
+          "customer": { "$ref": "#/components/schemas/Customer" },
+          "state": { "type": "string", "enum": ["new", "paid", "shipped"],
+            "default": "paid" }
+        }
+      }
+    }
+  }
+}

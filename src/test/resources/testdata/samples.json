@@ -1,0 +1,79 @@
+[
+  {
+    "key": "list-closed-ok",
+    "method": "get",
+    "path": "/orders",
+    "statusCode": 200,
+    "requestMediaType": "application/json",
+    "responseMediaType": "application/json",
+    "requestBody": null,
+    "responseBody": [
+      {
+        "id": "o-1",
+        "state": "closed",
+        "amount": 12.5,
+        "customer": { "email": "a@example.com", "tier": "pro" },
+        "coupon": null,
+        "tags": ["x"]
+      }
+    ]
+  },
+  {
+    "key": "list-new-ok",
+    "method": "get",
+    "path": "/orders",
+    "statusCode": 200,
+    "responseMediaType": "application/json",
+    "responseBody": [
+      {
+        "id": "o-2",
+        "state": "new",
+        "amount": 10,
+        "customer": { "email": "b@example.com", "tier": "free" }
+      }
+    ]
+  },
+  {
+    "key": "get-order-over-limit",
+    "method": "get",
+    "path": "/orders/{id}",
+    "statusCode": 200,
+    "responseMediaType": "application/json",
+    "responseBody": {
+      "id": "o-3",
+      "state": "paid",
+      "amount": 950000,
+      "customer": { "email": "c@example.com" }
+    }
+  },
+  {
+    "key": "create-valid",
+    "method": "post",
+    "path": "/orders",
+    "statusCode": 201,
+    "requestMediaType": "application/json",
+    "responseMediaType": "application/json",
+    "requestBody": {
+      "amount": 100,
+      "customer": { "email": "d@example.com", "tier": "pro" },
+      "state": "closed"
+    },
+    "responseBody": {
+      "id": "o-4",
+      "state": "closed",
+      "amount": 100,
+      "customer": { "email": "d@example.com", "tier": "pro" }
+    }
+  },
+  {
+    "key": "incomplete-no-status",
+    "method": "get",
+    "path": "/orders"
+  },
+  {
+    "key": "unknown-route",
+    "method": "delete",
+    "path": "/orders/{id}",
+    "statusCode": 204
+  }
+]

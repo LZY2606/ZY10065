@@ -1,0 +1,20 @@
+server:
+  port: 5202
+  address: 127.0.0.1
+spring:
+  datasource:
+    url: jdbc:h2:file:./data/compatdb;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  jackson:
+    default-property-inclusion: non_null
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health

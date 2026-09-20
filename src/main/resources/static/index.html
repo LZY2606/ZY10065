@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenAPI 兼容性分析平台</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header>
+  <h1>OpenAPI 兼容性分析平台</h1>
+  <nav>
+    <button data-view="import" class="navbtn active">导入</button>
+    <button data-view="runs" class="navbtn">排练汇总</button>
+    <button data-view="exemptions" class="navbtn">豁免与决策</button>
+    <button data-view="events" class="navbtn">审计事件</button>
+  </nav>
+</header>
+
+<main>
+  <section id="view-import" class="view">
+    <div class="cards">
+      <div class="card">
+        <h2>导入规范</h2>
+        <label>名称 <input id="spec-name" placeholder="orders-api"></label>
+        <label>角色
+          <select id="spec-role">
+            <option value="baseline">baseline（基线）</option>
+            <option value="candidate" selected>candidate（候选）</option>
+          </select>
+        </label>
+        <label>媒体类型
+          <select id="spec-media">
+            <option value="application/json">application/json</option>
+            <option value="application/yaml">application/yaml</option>
+          </select>
+        </label>
+        <label class="grow">规范内容<textarea id="spec-content" rows="10"
+          placeholder='{"openapi":"3.0.3",...}'></textarea></label>
+        <button id="spec-upload">导入规范</button>
+        <div id="spec-result" class="result"></div>
+        <table id="spec-table"><thead><tr><th>ID</th><th>名称</th><th>角色</th><th>指纹</th></tr></thead><tbody></tbody></table>
+      </div>
+
+      <div class="card">
+        <h2>导入脱敏样本集合</h2>
+        <label>集合名称 <input id="batch-name" placeholder="traffic-snapshot-1"></label>
+        <label class="grow">样本 JSON 数组（key/method/path/statusCode/请求与响应体）
+          <textarea id="batch-content" rows="10" placeholder='[ { "key":"s1", ... } ]'></textarea>
+        </label>
+        <button id="batch-upload">导入样本集合</button>
+        <div id="batch-result" class="result"></div>
+        <table id="batch-table"><thead><tr><th>ID</th><th>名称</th><th>样本数</th><th>快照指纹</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>创建排练</h2>
+      <div class="formrow">
+        <label>基线 ID <input id="run-baseline" type="number" style="width:90px"></label>
+        <label>候选 ID <input id="run-candidate" type="number" style="width:90px"></label>
+        <label>样本集合 ID <input id="run-batch" type="number" style="width:90px"></label>
+        <label>兼容策略
+          <select id="run-policy"><option value="compat-1.0">compat-1.0</option>
+          <option value="compat-1.1">compat-1.1</option></select>
+        </label>
+        <button id="run-create">创建 / 获取缓存排练</button>
+      </div>
+      <div id="run-result" class="result"></div>
+    </div>
+  </section>
+
+  <section id="view-runs" class="view hidden">
+    <div class="card">
+      <h2>排练列表</h2>
+      <table id="run-table"><thead><tr><th>ID</th><th>策略</th><th>基线</th><th>候选</th><th>样本集</th><th>排练指纹</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+    <div id="report-area" class="hidden">
+      <div class="card">
+        <h2>汇总 <button id="drill-back" class="smallbtn">返回列表</button></h2>
+        <div id="summary"></div>
+        <h3>独立证据（不计入通过率）</h3>
+        <div id="evidence"></div>
+      </div>
+      <div class="card">
+        <h3>结构变化</h3>
+        <table id="findings-table"><thead><tr><th>ID</th><th>级别</th><th>变更码</th><th>侧</th><th>方法</th><th>路径</th><th>定位</th><th>说明</th><th>豁免</th></tr></thead><tbody></tbody></table>
+      </div>
+      <div class="card">
+        <h3>样本回放（点击下钻）</h3>
+        <table id="samples-table"><thead><tr><th>样本</th><th>方法</th><th>路径</th><th>状态码</th><th>旧验证</th><th>新验证</th><th>判定</th><th>证据</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+    <div id="sample-area" class="hidden card">
+      <h2>单样本下钻 <button id="sample-back" class="smallbtn">返回汇总</button></h2>
+      <div id="sample-detail"></div>
+    </div>
+  </section>
+
+  <section id="view-exemptions" class="view hidden">
+    <div class="card">
+      <h2>豁免（有时限，绑定路径+方法+结构定位）</h2>
+      <table id="exemption-table"><thead><tr><th>ID</th><th>排练</th><th>变化</th><th>方法 路径</th><th>有效期</th><th>操作者</th><th>当前状态</th><th>定位结果</th><th></th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+
+  <section id="view-events" class="view hidden">
+    <div class="card">
+      <h2>审计事件（只追加；撤销产生新事件）</h2>
+      <table id="event-table"><thead><tr><th>ID</th><th>类型</th><th>排练</th><th>变化</th><th>操作者</th><th>理由</th><th>前版本</th><th>后版本</th><th>时间(ms)</th></tr></thead><tbody></tbody></table>
+    </div>
+  </section>
+</main>
+
+<div id="modal" class="modal hidden">
+  <div class="modal-body">
+    <h3 id="modal-title">授予豁免</h3>
+    <div id="modal-content"></div>
+    <div class="modal-actions">
+      <button id="modal-cancel">取消</button>
+      <button id="modal-submit" class="primary">提交</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

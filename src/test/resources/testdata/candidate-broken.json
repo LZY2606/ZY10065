@@ -1,0 +1,49 @@
+{
+  "openapi": "3.0.3",
+  "info": { "title": "orders", "version": "1.2.0-broken" },
+  "paths": {
+    "/loop": {
+      "get": {
+        "operationId": "loop",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": { "schema": { "$ref": "#/components/schemas/LoopA" } }
+            }
+          }
+        }
+      }
+    },
+    "/missing": {
+      "get": {
+        "operationId": "missing",
+        "responses": {
+          "200": {
+            "description": "ok",
+            "content": {
+              "application/json": { "schema": { "$ref": "https://other.example.com/schemas/External" } }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LoopA": {
+        "type": "object",
+        "properties": {
+          "self": { "$ref": "#/components/schemas/LoopA" },
+          "peer": { "$ref": "#/components/schemas/LoopB" }
+        }
+      },
+      "LoopB": {
+        "type": "object",
+        "properties": {
+          "back": { "$ref": "#/components/schemas/LoopA" }
+        }
+      }
+    }
+  }
+}
